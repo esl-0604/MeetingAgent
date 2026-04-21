@@ -1,0 +1,10 @@
+mss>=9.0.1
+Pillow>=10.0.0
+imagehash>=4.3.1
+pywin32>=306
+uiautomation>=2.0.18
+soundcard>=0.4.3
+soundfile>=0.12.1
+numpy>=1.26
+anthropic>=0.40.0
+easyocr>=1.7.2

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Meeting Agent</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --primary:#2563eb; --danger:#dc2626; }
+  body { font-family: 'Segoe UI', 'Malgun Gothic', '맑은 고딕', sans-serif;
+         max-width: 580px; margin: 40px auto; padding: 20px;
+         background: #f5f7fb; color: #1f2937; }
+  .card { background: white; border-radius: 12px; padding: 32px;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+  h1 { color: var(--primary); margin-top: 0; }
+  .status { padding: 14px 16px; background: #eef2ff; border-radius: 8px; margin: 16px 0;
+            border-left: 4px solid var(--primary); }
+  .install { padding: 18px; background: #fef3c7; border-radius: 8px; margin: 16px 0;
+             border-left: 4px solid #f59e0b; }
+  .hidden { display: none; }
+  button, a.btn { padding: 12px 22px; font-size: 15px; background: var(--primary); color: white;
+                   border: none; border-radius: 6px; cursor: pointer; text-decoration: none;
+                   display: inline-block; margin: 6px 4px; font-weight: 500; }
+  a.btn:hover { opacity: 0.9; }
+  code { background: #f3f4f6; padding: 2px 6px; border-radius: 3px; font-size: 13px;
+         font-family: 'Consolas', monospace; }
+  ol li { margin-bottom: 8px; }
+  .meta { color:#6b7280; font-size: 13px; margin-top: 24px;
+          padding-top: 16px; border-top: 1px solid #e5e7eb; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>📹 Meeting Agent</h1>
+
+  <div id="try" class="status">
+    <strong>앱을 실행합니다…</strong>
+    <p style="margin: 8px 0 0 0;">
+      브라우저에서 <em>"이 사이트가 Meeting Agent를 열려고 합니다"</em> 같은 알림이 뜨면
+      <strong>"열기"</strong> 를 누르세요. "항상 허용"을 체크하면 다음부터는 자동으로 열립니다.
+    </p>
+  </div>
+
+  <div id="install" class="install hidden">
+    <strong>⚠️ Meeting Agent 가 아직 설치되어 있지 않습니다</strong>
+    <p>처음이신가 봐요. 아래 순서대로 1분만 투자하시면 이후엔 바로 실행됩니다.</p>
+    <ol>
+      <li><a class="btn" id="dl-btn" href="#">Installer 다운로드</a></li>
+      <li>받은 <code>MeetingAgent_installer.zip</code> 을 원하는 폴더에 <strong>압축 해제</strong></li>
+      <li>풀린 폴더의 <code>install.bat</code> 을 <strong>더블클릭</strong>
+          (Windows SmartScreen 경고 시 <em>추가 정보 → 실행</em>)</li>
+      <li>설치가 끝나면 이 페이지의 <a href="#" onclick="location.reload();return false;">링크를 다시 클릭</a></li>
+    </ol>
+    <p style="color:#6b7280; font-size: 13px;">
+      관리자 권한 없이 현재 사용자 영역(<code>%LOCALAPPDATA%\MeetingAgent</code>)에 설치됩니다.
+    </p>
+  </div>
+
+  <div class="meta">
+    <div>요청된 동작: <strong id="action-label">show</strong></div>
+    <div>프로토콜: <code id="proto-url">meetingagent://show</code></div>
+  </div>
+</div>
+
+<script>
+// ==== 배포 설정 ================================================================
+const DOWNLOAD_URL = 'https://github.com/esl-0604/MeetingAgent/releases/latest/download/MeetingAgent_installer.zip';
+// ===========================================================================
+
+const params = new URLSearchParams(location.search);
+const action = (params.get('action') || 'show').toLowerCase();
+const protocolUrl = 'meetingagent://' + action;
+
+document.getElementById('action-label').textContent = action;
+document.getElementById('proto-url').textContent = protocolUrl;
+document.getElementById('dl-btn').href = DOWNLOAD_URL;
+
+let launched = false;
+window.addEventListener('blur', () => { launched = true; });
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') launched = true;
+});
+
+// iframe 기반 프로토콜 런칭 (Edge/Chrome/Firefox 모두 동작)
+const frame = document.createElement('iframe');
+frame.style.display = 'none';
+frame.src = protocolUrl;
+document.body.appendChild(frame);
+
+setTimeout(() => {
+  if (!launched) {
+    document.getElementById('try').classList.add('hidden');
+    document.getElementById('install').classList.remove('hidden');
+  }
+}, 2500);
+</script>
+</body>
+</html>

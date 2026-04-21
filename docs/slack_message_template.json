@@ -1,0 +1,40 @@
+{
+  "_comment": "Slack Block Kit 메시지 템플릿. Slack Workflow Builder, Incoming Webhook, 또는 bot 이 보내는 메시지에 사용. URL의 YOUR_ORG 와 repo 이름을 GitHub Pages 주소로 교체.",
+  "blocks": [
+    {
+      "type": "header",
+      "text": { "type": "plain_text", "text": "📹 Meeting Agent", "emoji": true }
+    },
+    {
+      "type": "context",
+      "elements": [
+        { "type": "mrkdwn", "text": "내 PC의 Teams 회의 아카이버 원격 제어" }
+      ]
+    },
+    {
+      "type": "actions",
+      "elements": [
+        {
+          "type": "button",
+          "text": { "type": "plain_text", "text": "▶️ 대기/활성화", "emoji": true },
+          "url": "https://esl-0604.github.io/MeetingAgent/launch.html?action=start",
+          "style": "primary",
+          "action_id": "meeting_start"
+        },
+        {
+          "type": "button",
+          "text": { "type": "plain_text", "text": "⏹️ 종료/저장", "emoji": true },
+          "url": "https://esl-0604.github.io/MeetingAgent/launch.html?action=stop",
+          "style": "danger",
+          "action_id": "meeting_stop"
+        },
+        {
+          "type": "button",
+          "text": { "type": "plain_text", "text": "ℹ️ 상태", "emoji": true },
+          "url": "https://esl-0604.github.io/MeetingAgent/launch.html?action=status",
+          "action_id": "meeting_status"
+        }
+      ]
+    }
+  ]
+}
