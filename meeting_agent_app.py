@@ -131,32 +131,98 @@ def save_config(cfg: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Teams 미팅 창 판별
+# Teams 미팅 창 판별 — UI Automation 기반
+#
+# Teams 미팅 창의 UIA 트리에는 아래 AutomationId 를 가진 툴바가 있다:
+#   - "horizontalMiddleEnd"  = 모임 컨트롤 (Meeting controls)
+#   - "horizontalEnd"        = 통화 컨트롤 (Call controls)
+#   - "indicators"           = 통화 표시기 (Call indicators)
+# 이 중 하나라도 트리에서 발견되면 확실히 미팅 창.
+# 제목 키워드에 의존하지 않아 스케줄/Meet Now/미팅 이름 상관없이 동작.
 # ---------------------------------------------------------------------------
 
-_MEETING_KW = ("모임", "통화", "회의", "meeting", "call")
-_NON_MEETING_KW = ("calendar", "일정", "채팅", "chat")
+_MEETING_UIA_IDS = frozenset({"horizontalMiddleEnd", "horizontalEnd", "indicators"})
+# 제목 기반 fallback (UIA 실패 시 최후 수단)
+_NON_MEETING_HINT = ("calendar", "일정", "채팅", "chat")
+_MEETING_HINT = ("모임", "통화", "회의", "meeting", "call")
 
 
-def classify_teams_window(title: str) -> str:
+def _walk_uia(control, max_depth: int = 25, depth: int = 0):
+    yield control
+    if depth >= max_depth:
+        return
+    try:
+        child = control.GetFirstChildControl()
+    except Exception:
+        return
+    while child is not None:
+        yield from _walk_uia(child, max_depth, depth + 1)
+        try:
+            child = child.GetNextSiblingControl()
+        except Exception:
+            break
+
+
+def _has_meeting_uia_markers(hwnd: int, max_depth: int = 25) -> bool:
+    """창 hwnd의 UIA 트리에서 미팅 툴바 AutomationId를 찾으면 True."""
+    try:
+        import uiautomation as auto
+    except Exception:
+        return False
+    try:
+        root = auto.ControlFromHandle(hwnd)
+        if root is None:
+            return False
+        for node in _walk_uia(root, max_depth=max_depth):
+            try:
+                aid = (node.AutomationId or "").strip()
+            except Exception:
+                continue
+            if aid in _MEETING_UIA_IDS:
+                return True
+        return False
+    except Exception:
+        return False
+
+
+def _title_hint_meeting(title: str) -> bool:
+    """UIA fallback용 제목 기반 휴리스틱."""
     if "Microsoft Teams" not in title:
-        return "non-teams"
+        return False
     low = title.lower()
-    for kw in _NON_MEETING_KW:
-        if kw in low:
-            return "calendar_or_chat"
-    for kw in _MEETING_KW:
-        if kw in title or kw.lower() in low:
-            return "meeting"
-    return "other"
+    if any(kw in low for kw in _NON_MEETING_HINT):
+        return False
+    if any(kw in title or kw.lower() in low for kw in _MEETING_HINT):
+        return True
+    return False
 
 
 def find_meeting_window() -> Optional[WindowRect]:
+    """UIA로 미팅 툴바 존재 여부를 확인해 미팅 창을 고른다.
+
+    UIA 확인 실패/예외 시 제목 기반 휴리스틱으로 폴백.
+    """
     wins = list_teams_windows()
-    candidates = [w for w in wins if classify_teams_window(w.title) == "meeting"]
-    if not candidates:
+    if not wins:
         return None
-    return max(candidates, key=lambda w: w.width * w.height)
+
+    # 1) UIA 기반 — 미팅 UI 컨트롤이 있는 창
+    uia_matches = []
+    for w in wins:
+        try:
+            if _has_meeting_uia_markers(w.hwnd):
+                uia_matches.append(w)
+        except Exception:
+            continue
+    if uia_matches:
+        return max(uia_matches, key=lambda w: w.width * w.height)
+
+    # 2) Fallback — 제목 키워드
+    title_matches = [w for w in wins if _title_hint_meeting(w.title)]
+    if title_matches:
+        return max(title_matches, key=lambda w: w.width * w.height)
+
+    return None
 
 
 # ---------------------------------------------------------------------------
