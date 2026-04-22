@@ -1,37 +1,29 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.egg-info/
-.Python
+# Rust (ver1)
+ver1/target/
+ver1/test/
 
-# Virtual environments
-.venv/
-venv/
-env/
+# Python (ver0)
+ver0/__pycache__/
+ver0/**/__pycache__/
+ver0/build/
+ver0/dist/
+ver0/captures/
+ver0/*.spec.bak
 
-# PyInstaller
-build/
-dist/
-*.spec
+# Captured meeting data (any folder of session recordings)
+**/sessions/
+**/MeetingSession/
+**/*.wav
+**/*.mp4
+!ver1/dist/**/*.wav
+!ver1/dist/**/*.mp4
+**/events.jsonl
+**/transcript.txt
+**/transcript/captions.*
 
-# Editor / IDE
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
 .vscode/
 .idea/
-*.swp
-.DS_Store
-
-# Runtime artifacts (not part of source)
-_active_session/
-_e2etest/
-_smoketest/
-captures/
-*.ogg
-*.webp
-_caption.jsonl
-_uia_watch.log
-meeting_agent_config.json
-
-# PyInstaller warning files
-warn-*.txt
-xref-*.html

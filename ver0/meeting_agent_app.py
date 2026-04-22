@@ -130,6 +130,33 @@ def save_config(cfg: dict) -> None:
         pass
 
 
+# 자막 영역 슬롯 (일반 / 화면 공유 중)
+REGION_SLOTS = ("normal", "sharing")
+SLOT_LABEL = {"normal": "일반", "sharing": "화면 공유 중"}
+
+
+def load_region_slots(cfg: dict) -> tuple[dict, str]:
+    """config → ({slot: region_dict_or_None}, active_slot).  레거시 'caption_region' 도 수용."""
+    slots = {s: None for s in REGION_SLOTS}
+    stored = cfg.get("caption_regions") or {}
+    for k, v in stored.items():
+        if k in slots and isinstance(v, dict):
+            slots[k] = v
+    legacy = cfg.get("caption_region")
+    if legacy and slots.get("normal") is None and isinstance(legacy, dict):
+        slots["normal"] = legacy
+    active = cfg.get("active_region_slot") or "normal"
+    if active not in slots:
+        active = "normal"
+    return slots, active
+
+
+def save_region_slots(cfg: dict, slots: dict, active: str) -> None:
+    cfg["caption_regions"] = {k: v for k, v in slots.items() if v}
+    cfg["active_region_slot"] = active
+    cfg.pop("caption_region", None)
+
+
 # ---------------------------------------------------------------------------
 # Teams 미팅 창 판별 — UI Automation 기반
 #
@@ -141,10 +168,26 @@ def save_config(cfg: dict) -> None:
 # 제목 키워드에 의존하지 않아 스케줄/Meet Now/미팅 이름 상관없이 동작.
 # ---------------------------------------------------------------------------
 
-_MEETING_UIA_IDS = frozenset({"horizontalMiddleEnd", "horizontalEnd", "indicators"})
-# 제목 기반 fallback (UIA 실패 시 최후 수단)
+_MEETING_UIA_IDS = frozenset({
+    "horizontalMiddleEnd",       # 모임 컨트롤 toolbar
+    "horizontalEnd",             # 통화 컨트롤 toolbar
+    "indicators",                # 통화 표시기
+    "hangup-button",             # 나가기 버튼 (일부 버전)
+    "leave-meeting-button",
+    "call-hangup-button",
+    "prejoin-meet-now-button",
+})
+_MEETING_UIA_NAMES = frozenset({
+    "모임 컨트롤", "통화 컨트롤", "통화 표시기",
+    "Meeting controls", "Call controls", "Call indicators",
+    "나가기", "Leave", "Leave meeting", "Hang up",
+})
+# 제목 기반 fallback
 _NON_MEETING_HINT = ("calendar", "일정", "채팅", "chat")
 _MEETING_HINT = ("모임", "통화", "회의", "meeting", "call")
+# 크기 기반 fallback 임계치
+_MIN_MEETING_WIN_W = 800
+_MIN_MEETING_WIN_H = 500
 
 
 def _walk_uia(control, max_depth: int = 25, depth: int = 0):
@@ -164,7 +207,7 @@ def _walk_uia(control, max_depth: int = 25, depth: int = 0):
 
 
 def _has_meeting_uia_markers(hwnd: int, max_depth: int = 25) -> bool:
-    """창 hwnd의 UIA 트리에서 미팅 툴바 AutomationId를 찾으면 True."""
+    """창 hwnd의 UIA 트리에서 미팅 UI 컨트롤(AutomationId/Name)을 찾으면 True."""
     try:
         import uiautomation as auto
     except Exception:
@@ -177,36 +220,48 @@ def _has_meeting_uia_markers(hwnd: int, max_depth: int = 25) -> bool:
             try:
                 aid = (node.AutomationId or "").strip()
             except Exception:
-                continue
-            if aid in _MEETING_UIA_IDS:
+                aid = ""
+            if aid and aid in _MEETING_UIA_IDS:
+                return True
+            try:
+                name = (node.Name or "").strip()
+            except Exception:
+                name = ""
+            if name and name in _MEETING_UIA_NAMES:
                 return True
         return False
     except Exception:
         return False
 
 
+def _is_calendar_or_chat_title(title: str) -> bool:
+    low = title.lower()
+    return any(kw in low for kw in _NON_MEETING_HINT)
+
+
 def _title_hint_meeting(title: str) -> bool:
     """UIA fallback용 제목 기반 휴리스틱."""
     if "Microsoft Teams" not in title:
         return False
-    low = title.lower()
-    if any(kw in low for kw in _NON_MEETING_HINT):
+    if _is_calendar_or_chat_title(title):
         return False
+    low = title.lower()
     if any(kw in title or kw.lower() in low for kw in _MEETING_HINT):
         return True
     return False
 
 
 def find_meeting_window() -> Optional[WindowRect]:
-    """UIA로 미팅 툴바 존재 여부를 확인해 미팅 창을 고른다.
-
-    UIA 확인 실패/예외 시 제목 기반 휴리스틱으로 폴백.
+    """미팅 창을 찾는다. 3단계 폴백:
+    1) UIA 트리에서 미팅 툴바/레이블 확인 (가장 정확)
+    2) 제목에 모임/통화/회의/meeting/call 키워드
+    3) 크기 기준 — Calendar/Chat 가 아닌 큰(>=800x500) Teams 창
     """
     wins = list_teams_windows()
     if not wins:
         return None
 
-    # 1) UIA 기반 — 미팅 UI 컨트롤이 있는 창
+    # 1) UIA
     uia_matches = []
     for w in wins:
         try:
@@ -217,10 +272,21 @@ def find_meeting_window() -> Optional[WindowRect]:
     if uia_matches:
         return max(uia_matches, key=lambda w: w.width * w.height)
 
-    # 2) Fallback — 제목 키워드
+    # 2) 제목 키워드
     title_matches = [w for w in wins if _title_hint_meeting(w.title)]
     if title_matches:
         return max(title_matches, key=lambda w: w.width * w.height)
+
+    # 3) 크기 기반 — 큰 비-Calendar Teams 창은 미팅일 가능성
+    size_matches = [
+        w for w in wins
+        if w.width >= _MIN_MEETING_WIN_W
+        and w.height >= _MIN_MEETING_WIN_H
+        and not _is_calendar_or_chat_title(w.title)
+        and w.title.strip() != "Microsoft Teams"  # 메인 앱 창 제외
+    ]
+    if size_matches:
+        return max(size_matches, key=lambda w: w.width * w.height)
 
     return None
 

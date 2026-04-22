@@ -1,0 +1,7 @@
+/target
+/sessions
+/logs
+*.pdb
+Cargo.lock.bak
+.vscode/
+.idea/

@@ -1,0 +1,5 @@
+# Static-link the MSVC C runtime so the resulting .exe runs on any Windows 10+
+# without requiring the user to install Visual C++ Redistributable.
+# Trade-off: binary is ~500 KB larger.
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]

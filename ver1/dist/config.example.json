@@ -1,0 +1,32 @@
+{
+  "_comment": "이 파일을 %APPDATA%\\MeetingAgent\\config.json 으로 복사한 뒤 편집하면 적용됩니다. 모든 필드는 선택사항이며 빠진 값은 기본값을 씁니다.",
+
+  "output_root": "C:\\Users\\YOURNAME\\Documents\\MeetingAgent\\sessions",
+
+  "_prompt_save_on_exit_comment": "기본값 true. 매 미팅 종료 시(자동 종료 + Ctrl-C 모두) 폴더 선택 다이얼로그가 떠서 세션을 옮길 위치를 직접 고를 수 있습니다. 다이얼로그를 취소하면 기본 위치(output_root)에 그대로 유지됩니다. 자동화/헤드리스 사용에서는 false로 두세요.",
+  "prompt_save_on_exit": true,
+
+  "audio": {
+    "capture_teams_loopback": true,
+    "capture_microphone": true,
+    "teams_process_name": "ms-teams.exe",
+    "fallback_to_default_loopback": true
+  },
+
+  "screen": {
+    "enabled": true,
+    "min_frame_interval_ms": 500,
+    "phash_threshold": 8,
+    "only_during_share": true
+  },
+
+  "caption": {
+    "enabled": true,
+    "poll_interval_ms": 400
+  },
+
+  "detect": {
+    "poll_interval_ms": 1500,
+    "use_log_tail": false
+  }
+}

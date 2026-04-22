@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Runtime artifacts (not part of source)
+_active_session/
+_e2etest/
+_smoketest/
+captures/
+*.ogg
+*.webp
+_caption.jsonl
+_uia_watch.log
+meeting_agent_config.json
+
+# PyInstaller warning files
+warn-*.txt
+xref-*.html

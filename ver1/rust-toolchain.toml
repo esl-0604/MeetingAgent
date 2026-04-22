@@ -1,0 +1,7 @@
+[toolchain]
+# Default to MSVC for production binaries (lto, smaller exe, native debug).
+# Switch the channel to "stable-x86_64-pc-windows-gnu" if you don't have
+# Visual Studio Build Tools installed — see README "Build" section.
+channel = "stable"
+components = ["rustfmt", "clippy"]
+targets = ["x86_64-pc-windows-msvc"]
