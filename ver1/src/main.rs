@@ -41,6 +41,17 @@ use crate::timeline::TimelineEvent;
 /// tokio runtime on the main thread to wind down.
 static SHUTDOWN_TX: OnceCell<broadcast::Sender<()>> = OnceCell::new();
 
+/// Path to the live log file that mirrors everything tracing emits to the
+/// console. Truncated at process startup; copied into each session folder
+/// as `agent.log` after the session finalises so users can attach it when
+/// reporting bugs (or so we can read it after the fact).
+static LOG_FILE_PATH: OnceCell<std::path::PathBuf> = OnceCell::new();
+
+/// Held alive for the lifetime of the process so the non-blocking file
+/// writer keeps flushing. Dropping this would silently drop pending log
+/// lines.
+static LOG_FILE_GUARD: OnceCell<tracing_appender::non_blocking::WorkerGuard> = OnceCell::new();
+
 #[derive(Parser, Debug)]
 #[command(version, about = "Teams meeting capture agent (L2: WASAPI / WGC / UIA)")]
 struct Cli {
@@ -421,15 +432,19 @@ async fn run_session(
     timeline::finalise(&session.root)?;
     info!("session finalised: {}", session.root.display());
 
-    // Phase 3: pare the session down to the two user-facing files
-    // (meeting.mp4 + transcript.txt). Skip cleanup if MP4 finalize failed —
-    // we'd rather leave events.jsonl behind for diagnosis than silently
-    // delete the only debugging breadcrumb.
+    // Phase 3: pare the session down to user-facing files
+    // (meeting.mp4 + transcript.txt + agent.log). Skip cleanup if MP4
+    // finalize failed — we'd rather leave events.jsonl behind for
+    // diagnosis than silently delete the only debugging breadcrumb.
     if mp4_ok {
         timeline::cleanup_intermediates(&session.root);
     } else {
         warn!("MP4 finalize failed; keeping events.jsonl as fallback for diagnosis");
     }
+
+    // Snapshot the running log file into the session folder LAST so it
+    // captures everything up to and including finalise + cleanup.
+    snapshot_log_into_session(&session.root);
 
     info!("session done: {}", session.root.display());
     Ok(())
@@ -481,10 +496,56 @@ async fn pick_session_parent(cfg: &Arc<config::Config>) -> std::path::PathBuf {
 
 fn init_tracing(filter: &str) -> Result<()> {
     let env = EnvFilter::try_new(filter).unwrap_or_else(|_| EnvFilter::new("info"));
+
+    // Mirror everything to a file in %TEMP% so we can copy it into the
+    // session folder at finalise. Truncate on every run so the log only
+    // covers the current process. We use tracing-appender's non-blocking
+    // wrapper to keep file I/O off the hot logging path.
+    let log_dir = std::env::temp_dir();
+    let log_name = "meeting-agent.log";
+    let log_path = log_dir.join(log_name);
+    let _ = std::fs::remove_file(&log_path); // truncate prior run's log
+    let file_appender = tracing_appender::rolling::never(&log_dir, log_name);
+    let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
+    let _ = LOG_FILE_PATH.set(log_path);
+    let _ = LOG_FILE_GUARD.set(guard);
+
+    let console_layer = fmt::layer().with_target(true).with_level(true);
+    let file_layer = fmt::layer()
+        .with_target(true)
+        .with_level(true)
+        .with_ansi(false) // no ANSI colour escapes in the file
+        .with_writer(non_blocking);
+
     tracing_subscriber::registry()
         .with(env)
-        .with(fmt::layer().with_target(true).with_level(true))
+        .with(console_layer)
+        .with(file_layer)
         .try_init()
         .map_err(|e| anyhow::anyhow!("tracing init: {e}"))?;
     Ok(())
+}
+
+/// Copy the live log file into the session folder as `agent.log`. Called
+/// at session finalise. Best-effort — failures are logged and skipped.
+fn snapshot_log_into_session(session_dir: &std::path::Path) {
+    let Some(src) = LOG_FILE_PATH.get() else {
+        return;
+    };
+    if !src.exists() {
+        return;
+    }
+    // Force the appender to flush whatever's queued before we copy.
+    // (The guard's normal flush happens at process exit, but we want a
+    // fresh snapshot now.) The non-blocking writer doesn't expose an
+    // explicit flush, so we settle for letting the runtime drain a
+    // moment and then copying — anything submitted during the copy
+    // arrives in the file but not in this snapshot, which is fine.
+    std::thread::sleep(std::time::Duration::from_millis(150));
+    let dst = session_dir.join("agent.log");
+    if let Err(e) = std::fs::copy(src, &dst) {
+        warn!("failed to snapshot log to {}: {e}", dst.display());
+    } else {
+        info!("wrote agent.log → {}", dst.display());
+    }
 }

@@ -52,6 +52,14 @@ pub struct CaptureSession {
     session: GraphicsCaptureSession,
     d3d_device: ID3D11Device,
     d3d_context: ID3D11DeviceContext,
+    /// Kept so we can call `pool.Recreate(...)` when the captured item
+    /// grows past the texture we allocated at session start — without it,
+    /// only the top-left corner of the new size ends up in the recording.
+    direct3d_device: IDirect3DDevice,
+    /// Current texture size of `pool`. Compared against each frame's
+    /// `ContentSize` so we notice when the Teams window has been resized
+    /// (e.g. switching from lobby view to meeting view, or user maximise).
+    pool_size: SizeInt32,
 }
 
 impl CaptureSession {
@@ -129,6 +137,8 @@ impl CaptureSession {
             session,
             d3d_device,
             d3d_context,
+            direct3d_device: direct3d_device.clone(),
+            pool_size: size,
         })
     }
 
@@ -142,6 +152,38 @@ impl CaptureSession {
                 return Ok(None);
             }
         };
+
+        // Content has grown past our pool texture (e.g. Teams switched from
+        // lobby view to a larger meeting view, or the user maximised).
+        // Recreate the pool at the new size; otherwise WGC would keep
+        // writing just the top-left corner of the real content into our
+        // fixed texture and the MP4 ends up cropped.
+        let content_size = frame.ContentSize().unwrap_or(self.pool_size);
+        if content_size.Width != self.pool_size.Width
+            || content_size.Height != self.pool_size.Height
+        {
+            tracing::info!(
+                "WGC pool resize: {}x{} -> {}x{}",
+                self.pool_size.Width,
+                self.pool_size.Height,
+                content_size.Width,
+                content_size.Height
+            );
+            self.pool
+                .Recreate(
+                    &self.direct3d_device,
+                    DirectXPixelFormat::B8G8R8A8UIntNormalized,
+                    POOL_BUFFER_COUNT,
+                    content_size,
+                )
+                .context("FramePool::Recreate")?;
+            self.pool_size = content_size;
+            // Skip this frame: its surface is still the old texture and
+            // may only partially fill the new content extent. The very
+            // next frame will arrive at the new size.
+            return Ok(None);
+        }
+
         let surface = frame.Surface().context("frame.Surface()")?;
         let access: IDirect3DDxgiInterfaceAccess = surface.cast()?;
         let src_tex: ID3D11Texture2D = unsafe { access.GetInterface() }?;

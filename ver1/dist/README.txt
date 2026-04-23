@@ -41,7 +41,7 @@ Meeting Agent — Teams 미팅 캡처 도구
 
 ("내 문서" 폴더가 OneDrive 등으로 redirect 되어 있으면 그쪽을 따라갑니다.)
 
-세션 폴더에는 단 2개 파일만 남습니다:
+세션 폴더에는 3개 파일이 남습니다:
 
    meeting.mp4       1080p H.264 + AAC
                      - Teams 음성 + 내 마이크 믹싱
@@ -50,6 +50,8 @@ Meeting Agent — Teams 미팅 캡처 도구
                        (내가 공유 시: 공유한 그 윈도우)
    transcript.txt    [HH:MM:SS.mmm] Speaker: text 한 줄/문장
                      (Teams 라이브 캡션을 읽어 저장)
+   agent.log         이번 실행 동안 콘솔에 찍힌 모든 로그 사본
+                     (문제 보고할 때 첨부하면 디버깅이 쉬워짐)
 
 영상 캡처가 정상 종료 못 하면 (드물지만 강제 종료 등) 복구용으로
 events.jsonl이 남습니다. 정상 종료 시엔 자동 삭제.
