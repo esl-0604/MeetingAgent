@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meeting Agent v0.2.0</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Pretendard', 'Malgun Gothic', 'Apple SD Gothic Neo', -apple-system, sans-serif;
+    color: #1f1d3a;
+    background: #f7f6fb;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 24px 60px; }
+
+  header.hero {
+    background:
+      radial-gradient(80% 60% at 100% 0%, rgba(124,58,237,0.50) 0%, transparent 60%),
+      linear-gradient(135deg, #1e1b4b 0%, #4c1d95 50%, #1e3a8a 100%);
+    color: white;
+    padding: 36px 0 38px;
+    margin-bottom: 28px;
+  }
+  .hero-row { display: flex; align-items: center; gap: 18px; }
+  .hero-icon {
+    width: 72px; height: 72px;
+    filter: drop-shadow(0 6px 18px rgba(0,0,0,0.4));
+  }
+  .brand { font-size: 11px; opacity: 0.7; letter-spacing: 2px; text-transform: uppercase; font-weight: 600; }
+  .hero h1 {
+    font-size: 28px;
+    font-weight: 800;
+    margin-top: 4px;
+    letter-spacing: -0.4px;
+  }
+  .version-pill {
+    display: inline-block;
+    background: rgba(255,255,255,0.16);
+    border: 1px solid rgba(255,255,255,0.22);
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-top: 6px;
+  }
+
+  section { background: white; border-radius: 14px; padding: 22px 26px; margin-bottom: 16px; box-shadow: 0 2px 10px rgba(28,16,77,0.05); }
+  section h2 {
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 14px;
+    letter-spacing: -0.2px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  section h2 .num {
+    color: white;
+    background: linear-gradient(135deg, #7c3aed, #4c1d95);
+    width: 26px; height: 26px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 700;
+    display: grid; place-items: center;
+    flex: 0 0 26px;
+  }
+  section p { font-size: 14px; margin: 4px 0; }
+  section code {
+    background: #f3f0fb;
+    color: #6b21a8;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 12.5px;
+  }
+
+  /* Step cards (quick start) */
+  .steps {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+  .step {
+    background: #f7f6fb;
+    border-radius: 10px;
+    padding: 14px 16px;
+    border-left: 3px solid #7c3aed;
+  }
+  .step .label {
+    font-size: 11px; font-weight: 700;
+    color: #7c3aed; letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .step .text { font-size: 13.5px; }
+  .step code { font-size: 12px; }
+
+  /* Screenshot flow */
+  .flow-step {
+    margin: 14px 0 22px;
+  }
+  .flow-step-head {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e9e6f3;
+  }
+  .flow-step-head .badge {
+    background: linear-gradient(135deg, #7c3aed, #4c1d95);
+    color: white;
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    display: grid; place-items: center;
+  }
+  .flow-step-head .label {
+    font-size: 14px; font-weight: 700;
+    color: #312e81;
+  }
+  .flow-step-head .desc {
+    font-size: 12.5px;
+    color: #6b6991;
+    margin-left: auto;
+  }
+  .shots {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    align-items: start;
+  }
+  .shot { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+  .shot img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 10px;
+    box-shadow: 0 4px 18px rgba(28,16,77,0.15);
+    border: 1px solid rgba(124,58,237,0.10);
+    image-rendering: -webkit-optimize-contrast;
+  }
+  .shot .cap { font-size: 12px; color: #6b6991; text-align: center; }
+  .shot.shot-narrow img { max-width: 380px; }
+  .shot.shot-wide img { max-width: 100%; }
+  .arrow {
+    text-align: center;
+    color: #c4b5fd;
+    font-size: 22px;
+    line-height: 1;
+    margin: -4px 0;
+  }
+
+  .placeholder {
+    background: repeating-linear-gradient(45deg, #f3f0fb, #f3f0fb 8px, #ebe5f8 8px, #ebe5f8 16px);
+    color: #6b21a8;
+    border: 2px dashed #c4b5fd;
+    border-radius: 10px;
+    padding: 30px 12px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid #e9e6f3; }
+  th { background: #f7f6fb; font-weight: 700; color: #4c1d95; font-size: 12.5px; }
+  td code { font-size: 12px; }
+
+  .files {
+    display: grid; grid-template-columns: 220px 1fr; gap: 4px 14px;
+    font-size: 13.5px;
+  }
+  .files .name { font-family: 'JetBrains Mono', Consolas, monospace; font-weight: 600; color: #4c1d95; font-size: 12.5px; }
+
+  .faq dt { font-weight: 700; font-size: 13.5px; margin-top: 10px; color: #312e81; }
+  .faq dd { font-size: 13px; color: #1f1d3a; margin-left: 0; opacity: 0.85; }
+  .faq dd code { font-size: 12px; }
+
+  footer { margin-top: 24px; text-align: center; color: #6b6991; font-size: 12px; }
+  footer a { color: #7c3aed; }
+
+  @media (max-width: 600px) {
+    .steps { grid-template-columns: 1fr; }
+  }
+  @media print {
+    body { background: white; }
+    section { box-shadow: none; border: 1px solid #e9e6f3; page-break-inside: avoid; }
+    header.hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap" style="padding-top:0; padding-bottom:0;">
+    <div class="hero-row">
+      <img class="hero-icon" src="{{ICON_LARGE}}" alt="Meeting Agent" />
+      <div>
+        <div class="brand">MEETING AGENT</div>
+        <h1>Teams 미팅 자동 캡처</h1>
+        <span class="version-pill">v0.2.0</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section>
+    <h2><span class="num">1</span>빠른 시작</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="label">STEP 1</div>
+        <div class="text">zip 풀고 <code>meeting-agent.exe</code> 더블클릭</div>
+      </div>
+      <div class="step">
+        <div class="label">STEP 2</div>
+        <div class="text">환영창 → 시작하기 → 저장 폴더 선택</div>
+      </div>
+      <div class="step">
+        <div class="label">STEP 3</div>
+        <div class="text">트레이 상주. Teams 미팅 시작 시 알림</div>
+      </div>
+    </div>
+    <p style="margin-top:10px; font-size:12.5px; color:#6b6991;">
+      처음 실행 시 SmartScreen 경고 → "추가 정보" → "실행" (1회만)
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="num">2</span>요구 환경</h2>
+    <table>
+      <tbody>
+        <tr><td>OS</td><td>Windows 10 build 19041 (2004) 이상 · Windows 11 권장</td></tr>
+        <tr><td>Teams</td><td>New Teams (Classic Teams 미지원)</td></tr>
+        <tr><td>WebView2</td><td>Windows 11 기본 탑재 / Windows 10 거의 모두 설치됨</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2><span class="num">3</span>사용 흐름</h2>
+
+    <div class="flow-step">
+      <div class="flow-step-head">
+        <span class="badge">A</span>
+        <span class="label">시작</span>
+        <span class="desc">실행 → 환영창 → 저장 폴더 선택</span>
+      </div>
+      <div class="shots">
+        <figure class="shot shot-wide">
+          <img src="{{SHOT_WELCOME}}" alt="" />
+          <div class="cap">① 환영창 — Enter / 시작하기 → 다음</div>
+        </figure>
+        <figure class="shot shot-wide">
+          <img src="{{SHOT_FOLDER_PICKER}}" alt="" />
+          <div class="cap">② 폴더 선택 — 이름란에 기본 경로 채워짐</div>
+        </figure>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-step-head">
+        <span class="badge">B</span>
+        <span class="label">트레이 상주</span>
+        <span class="desc">시계 옆 마스코트 + 안내 토스트</span>
+      </div>
+      <div class="shots">
+        <figure class="shot shot-narrow">
+          <img src="{{SHOT_TRAY_AREA}}" alt="" />
+          <div class="cap">③ 트레이 아이콘 (∧ 안)</div>
+        </figure>
+        <figure class="shot shot-narrow">
+          <img src="{{SHOT_STARTUP}}" alt="" />
+          <div class="cap">④ "트레이에서 동작 중입니다" 안내</div>
+        </figure>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-step-head">
+        <span class="badge">C</span>
+        <span class="label">미팅 감지 → 녹화</span>
+        <span class="desc">30초 응답 대기</span>
+      </div>
+      <div class="shots">
+        <figure class="shot shot-narrow">
+          <img src="{{SHOT_MEETING_PROMPT}}" alt="" />
+          <div class="cap">⑤ 녹화하시겠습니까? → 클릭 시 즉시 녹화 시작</div>
+        </figure>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-step-head">
+        <span class="badge">D</span>
+        <span class="label">녹화 중 이벤트</span>
+        <span class="desc">자막·화면공유·캡처 대상 변경 알림</span>
+      </div>
+      <div class="shots">
+        <figure class="shot shot-narrow">
+          <img src="{{SHOT_EVENT_CAPTION}}" alt="" />
+          <div class="cap">⑥ 자막 감지 — transcript.txt 기록 시작</div>
+        </figure>
+        <figure class="shot shot-narrow">
+          <img src="{{SHOT_EVENT_SHARE}}" alt="" />
+          <div class="cap">⑦ 화면 공유 시작</div>
+        </figure>
+        <figure class="shot shot-narrow">
+          <img src="{{SHOT_SOURCE_SWITCH}}" alt="" />
+          <div class="cap">⑧ 캡처 소스 전환 (공유 창 → Teams 등)</div>
+        </figure>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-step-head">
+        <span class="badge">E</span>
+        <span class="label">미팅 종료</span>
+        <span class="desc">자동 감지 → 10초 확인 → 마무리</span>
+      </div>
+      <div class="shots">
+        <figure class="shot shot-narrow">
+          <img src="{{SHOT_MEETING_ENDED}}" alt="" />
+          <div class="cap">⑨ 종료 확인 — 10초 안에 클릭 / 무응답 시 자동 마무리</div>
+        </figure>
+        <figure class="shot shot-narrow">
+          <img src="{{SHOT_POST_FINALIZE}}" alt="" />
+          <div class="cap">⑩ 녹화 완료 → 클릭해서 폴더 열기</div>
+        </figure>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-step-head">
+        <span class="badge">⚙</span>
+        <span class="label">언제든 — 트레이 우클릭</span>
+        <span class="desc">상태 보기 / 수동 시작·중지 / 설정</span>
+      </div>
+      <div class="shots">
+        <figure class="shot shot-wide">
+          <img src="{{SHOT_TRAY_MENU}}" alt="" />
+          <div class="cap">⑪ 트레이 메뉴 (우클릭)</div>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">4</span>흐름</h2>
+    <table>
+      <thead><tr><th>상황</th><th>동작</th></tr></thead>
+      <tbody>
+        <tr><td>미팅 감지 시</td><td>녹화 / 무시 토스트 (30초)</td></tr>
+        <tr><td>녹화 중 자막·공유·리사이즈</td><td>이벤트 알림 팝업 (트레이 설정에서 OFF 가능)</td></tr>
+        <tr><td>미팅 종료 감지 시</td><td>"녹화 중지 + 폴더 열기" 팝업 (10초)</td></tr>
+        <tr><td>10초 무응답</td><td>자동 finalize → 완료 팝업</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2><span class="num">5</span>트레이 메뉴</h2>
+    <table>
+      <thead><tr><th>항목</th><th>동작</th></tr></thead>
+      <tbody>
+        <tr><td>▶ 녹화 시작</td><td>미팅 감지 상태에서 활성</td></tr>
+        <tr><td>■ 녹화 중지</td><td>녹화 중 활성</td></tr>
+        <tr><td>📁 마지막 세션 폴더 열기</td><td>이전 녹화 있을 때 활성</td></tr>
+        <tr><td>설정 → 저장 위치 변경</td><td>다음 녹화부터 즉시 반영</td></tr>
+        <tr><td>설정 → 감지 시 자동 녹화</td><td>토스트 없이 즉시 시작</td></tr>
+        <tr><td>설정 → Windows 시작 시 자동 실행</td><td>레지스트리 등록</td></tr>
+        <tr><td>설정 → 이벤트 알림</td><td>자막/공유/리사이즈 알림 ON·OFF</td></tr>
+        <tr><td>설정 → 로그 파일 보기</td><td><code>agent.log</code></td></tr>
+        <tr><td>✕ 종료</td><td>finalize 후 종료</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2><span class="num">6</span>결과물</h2>
+    <p style="font-size:12.5px; color:#6b6991; margin-bottom:8px;">
+      <code>&lt;저장 폴더&gt;\YYYY-MM-DD-HHMMSS-MeetingSession\</code>
+    </p>
+    <div class="files">
+      <span class="name">meeting.mp4</span>
+      <span>1080p · 6 Mbps · 10 fps · H.264 + AAC (Teams 음성 + 마이크)</span>
+      <span class="name">transcript.txt</span>
+      <span><code>[HH:MM:SS.mmm] Speaker: text</code> · Teams 라이브 캡션 ON 필요</span>
+      <span class="name">agent.log</span>
+      <span>이번 세션의 디버그 로그 (문제 보고용)</span>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">7</span>문제 해결</h2>
+    <dl class="faq">
+      <dt>트레이 아이콘이 안 보여요</dt>
+      <dd>시계 옆 <code>∧</code> 클릭. Windows 11에선 기본 숨김.</dd>
+
+      <dt>미팅 감지 팝업이 안 떠요</dt>
+      <dd>New Teams인지 확인. <code>run-debug.bat</code>으로 콘솔 모드 → 로그 확인.</dd>
+
+      <dt>transcript.txt가 비어있어요</dt>
+      <dd>Teams 라이브 캡션을 켜세요. <code>···</code> → "언어 및 음성" → "라이브 캡션 켜기"</dd>
+
+      <dt>강제 종료 후 MP4가 깨졌어요</dt>
+      <dd><code>ffmpeg -i meeting.mp4 -c copy meeting-recovered.mp4</code></dd>
+
+      <dt>로그 위치</dt>
+      <dd>실시간 <code>%TEMP%\meeting-agent.log</code> · 세션 사본 <code>&lt;세션&gt;\agent.log</code></dd>
+    </dl>
+  </section>
+
+  <section>
+    <h2><span class="num">8</span>알려진 한계</h2>
+    <ul style="font-size:13.5px; padding-left:20px;">
+      <li>Teams 라이브 캡션이 켜진 상태에서만 transcript 채워짐</li>
+      <li>참석자에게 녹화 알림이 안 뜨므로 <strong>조직 정책상 사전 고지 필요</strong></li>
+      <li>1080p / 6 Mbps / 10 fps 고정</li>
+    </ul>
+  </section>
+
+  <footer>
+    Meeting Agent v0.2.0 · <a href="mailto:eunsang.lee@endorobo.com">eunsang.lee@endorobo.com</a>
+  </footer>
+
+</div>
+
+</body>
+</html>

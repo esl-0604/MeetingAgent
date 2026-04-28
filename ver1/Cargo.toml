@@ -5,10 +5,16 @@ edition = "2021"
 rust-version = "1.75"
 authors = ["eunsang.lee@endorobo.com"]
 description = "L2 capture agent for Microsoft Teams meetings: captions via UIA, audio via WASAPI process loopback, shared screens via Windows.Graphics.Capture"
+build = "build.rs"
 
 [[bin]]
 name = "meeting-agent"
 path = "src/main.rs"
+
+[build-dependencies]
+ico = "0.4"
+image = { version = "0.25", default-features = false, features = ["png"] }
+winres = "0.1"
 
 [dependencies]
 anyhow = "1"
@@ -29,6 +35,14 @@ once_cell = "1"
 notify = "6"
 dirs = "5"
 windows-core = "0.58"
+
+# GUI: system tray + custom WebView2 popups (replaces winrt toast — wry covers
+# both the welcome dialog and runtime notifications)
+tray-icon = "0.19"
+tao = "0.30"
+muda = "0.15"
+auto-launch = "0.5"
+wry = "0.47"
 
 [dependencies.windows]
 version = "0.58"

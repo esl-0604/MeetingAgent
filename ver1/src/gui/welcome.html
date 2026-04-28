@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meeting Agent</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  body {
+    font-family: 'Pretendard', 'Malgun Gothic', 'Apple SD Gothic Neo', -apple-system, sans-serif;
+    background:
+      radial-gradient(120% 80% at 100% 0%, rgba(124,58,237,0.55) 0%, transparent 60%),
+      radial-gradient(120% 80% at 0% 100%, rgba(56,189,248,0.40) 0%, transparent 55%),
+      linear-gradient(135deg, #1e1b4b 0%, #4c1d95 50%, #1e3a8a 100%);
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .splash {
+    flex: 1;
+    padding: 34px 40px 28px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .head { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+  .icon {
+    width: 88px; height: 88px;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 18px rgba(0,0,0,0.35));
+    margin: -8px 0 -10px -6px;
+  }
+  .brand { font-size: 12px; opacity: 0.7; letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 2px; }
+  .brand-row { display: flex; flex-direction: column; }
+  .version { font-size: 11px; opacity: 0.55; }
+  h1 {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.35;
+    letter-spacing: -0.3px;
+    margin-bottom: 8px;
+  }
+  .lead {
+    font-size: 13.5px;
+    opacity: 0.85;
+    line-height: 1.55;
+    margin-bottom: 18px;
+  }
+  ul {
+    list-style: none;
+    font-size: 13px;
+    opacity: 0.92;
+    line-height: 1.7;
+  }
+  ul li {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 1px 0;
+  }
+  ul li .check {
+    width: 18px; height: 18px; flex: 0 0 18px;
+    border-radius: 50%;
+    background: rgba(134,239,172,0.18);
+    color: #86efac;
+    display: grid; place-items: center;
+    font-size: 11px; font-weight: 700;
+    margin-top: 2px;
+  }
+  .actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: 24px;
+    gap: 10px;
+  }
+  button {
+    border: none;
+    border-radius: 10px;
+    padding: 11px 26px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: transform 0.06s ease, background 0.15s ease, box-shadow 0.15s ease;
+  }
+  .primary {
+    background: rgba(255,255,255,0.96);
+    color: #312e81;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.20);
+  }
+  .primary:hover { background: #fff; transform: translateY(-1px); box-shadow: 0 6px 22px rgba(0,0,0,0.28); }
+  .primary:active { transform: translateY(0); }
+  .primary:focus-visible { outline: 2px solid #c4b5fd; outline-offset: 2px; }
+  .hint {
+    font-size: 11.5px;
+    opacity: 0.7;
+    text-align: center;
+    margin-top: 10px;
+  }
+</style>
+</head>
+<body>
+  <div class="splash">
+    <div>
+      <div class="head">
+        <img class="icon" src="{{ICON_DATA_URI}}" alt="Meeting Agent" />
+        <div class="brand-row">
+          <span class="brand">Meeting Agent</span>
+          <span class="version">v0.2.0</span>
+        </div>
+      </div>
+      <h1>환영합니다</h1>
+      <p class="lead">
+        Teams 미팅을 자동으로 감지해 영상·음성·자막을 기록합니다.
+        평소엔 트레이에 조용히 있다가 미팅이 시작되면 알려드립니다.
+      </p>
+      <ul>
+        <li><span class="check">✓</span><span>미팅 감지 시 토스트로 녹화 여부 확인</span></li>
+        <li><span class="check">✓</span><span>화면 공유 시 자동으로 캡처 대상 전환</span></li>
+        <li><span class="check">✓</span><span>라이브 캡션을 텍스트로 동시 저장</span></li>
+      </ul>
+    </div>
+    <div>
+      <div class="actions">
+        <button id="ok" class="primary" onclick="window.ipc.postMessage('ok')" autofocus>
+          시작하기 →
+        </button>
+      </div>
+      <p class="hint">다음 화면에서 녹화 결과를 저장할 폴더를 선택해주세요.</p>
+    </div>
+  </div>
+  <script>
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        window.ipc.postMessage('ok');
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        window.ipc.postMessage('cancel');
+      }
+    });
+    // Make sure the button gets focus even when window receives focus late.
+    window.addEventListener('focus', () => {
+      const btn = document.getElementById('ok');
+      if (btn) btn.focus();
+    });
+  </script>
+</body>
+</html>

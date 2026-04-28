@@ -169,6 +169,16 @@ impl CaptureSession {
                 content_size.Width,
                 content_size.Height
             );
+            crate::gui::popup::show_event(
+                "캡처 창 크기 변경",
+                &format!(
+                    "{}×{} → {}×{} 로 캡처 해상도가 자동 조정됩니다.",
+                    self.pool_size.Width,
+                    self.pool_size.Height,
+                    content_size.Width,
+                    content_size.Height
+                ),
+            );
             self.pool
                 .Recreate(
                     &self.direct3d_device,

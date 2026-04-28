@@ -139,12 +139,14 @@ fn poll_loop(
             }
             (Some(_), None) => {
                 miss_streak += 1;
-                // Grace period: when the user starts a screen share, Teams
-                // transiently rearranges its windows and the hangup button
-                // can disappear from the UIA tree for several seconds. Wait
-                // ~15 s of continuous misses (10 * 1.5 s poll) before
-                // declaring the meeting truly over.
-                if miss_streak >= 10 {
+                // Tight grace period (~3 s @ 1.5 s poll) so the
+                // "미팅이 종료된 것 같습니다" popup appears quickly when the
+                // user actually leaves the meeting. Teams sometimes makes
+                // the hangup button briefly disappear during share-start —
+                // that's now handled in the GUI layer: when `Started` fires
+                // again while we are in `AwaitingEndConfirm`, the GUI
+                // reverts state to `Recording` automatically.
+                if miss_streak >= 2 {
                     in_meeting = None;
                     miss_streak = 0;
                     let _ = tx.blocking_send(MeetingEvent::Stopped);

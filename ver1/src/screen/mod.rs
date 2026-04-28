@@ -123,6 +123,16 @@ fn run_blocking(
                     wall: w,
                     presenter: new_s.presenter.clone(),
                 });
+                let who = new_s
+                    .presenter
+                    .clone()
+                    .unwrap_or_else(|| "참가자".to_string());
+                let body = if who == "(me)" {
+                    "내 화면을 공유 중입니다 — 캡처 대상이 공유 창으로 자동 전환됩니다.".into()
+                } else {
+                    format!("{who}님이 화면을 공유 중입니다.")
+                };
+                crate::gui::popup::show_event("화면 공유 시작", &body);
             }
             (Some(_), None) => {
                 let (t, w) = now_event_stamps();
@@ -131,6 +141,10 @@ fn run_blocking(
                     wall: w,
                     presenter: last_share_state.as_ref().and_then(|s| s.presenter.clone()),
                 });
+                crate::gui::popup::show_event(
+                    "화면 공유 종료",
+                    "캡처 대상이 Teams 창으로 복귀합니다.",
+                );
             }
             _ => {}
         }
@@ -163,6 +177,10 @@ fn run_blocking(
                         level: "info".into(),
                         msg: format!("video source: {:?}", want),
                     });
+                    crate::gui::popup::show_event(
+                        "캡처 소스 전환",
+                        &format!("녹화 대상이 변경되었습니다: {:?}", want),
+                    );
                 }
                 Err(e) => {
                     warn!("failed to switch video source to {:?}: {e:#} (reverting)", want);

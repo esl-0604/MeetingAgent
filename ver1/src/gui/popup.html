@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%;
+    background: transparent;
+    overflow: hidden;
+    font-family: 'Pretendard', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
+    color: white;
+  }
+  .popup {
+    margin: 6px;
+    height: calc(100% - 12px);
+    background:
+      radial-gradient(120% 80% at 100% 0%, rgba(124,58,237,0.45) 0%, transparent 60%),
+      linear-gradient(135deg, #1e1b4b 0%, #4c1d95 60%, #1e3a8a 100%);
+    border-radius: 14px;
+    padding: 14px 18px;
+    box-shadow: 0 10px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.10);
+    display: flex; flex-direction: column;
+    transform: translateX(120%);
+    animation: slideIn 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    cursor: pointer;
+  }
+  @keyframes slideIn {
+    to { transform: translateX(0); }
+  }
+  .head {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 6px;
+    font-size: 10.5px; opacity: 0.75;
+    letter-spacing: 1.4px; text-transform: uppercase;
+    font-weight: 600;
+  }
+  .head img {
+    width: 16px; height: 16px;
+    border-radius: 4px;
+  }
+  .close {
+    margin-left: auto;
+    width: 18px; height: 18px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.7);
+    font-size: 11px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .close:hover { background: rgba(255,255,255,0.20); color: white; }
+  .title {
+    font-size: 14.5px; font-weight: 700;
+    margin-bottom: 4px;
+    line-height: 1.3;
+    letter-spacing: -0.2px;
+  }
+  .body {
+    font-size: 12.5px; opacity: 0.88;
+    line-height: 1.45;
+    flex: 1;
+    overflow: hidden;
+  }
+  .actions {
+    display: flex; gap: 6px;
+    justify-content: flex-end;
+    margin-top: 10px;
+  }
+  button {
+    border: none;
+    border-radius: 7px;
+    padding: 7px 14px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s, transform 0.05s;
+  }
+  button:active { transform: translateY(1px); }
+  .primary {
+    background: rgba(255,255,255,0.95);
+    color: #312e81;
+  }
+  .primary:hover { background: white; }
+  .secondary {
+    background: rgba(255,255,255,0.10);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.18);
+  }
+  .secondary:hover { background: rgba(255,255,255,0.18); }
+</style>
+</head>
+<body>
+  <div class="popup" id="popup" onclick="bodyClick(event)">
+    <div class="head">
+      <img src="{{ICON_DATA_URI}}" alt="" />
+      <span>{{HEAD}}</span>
+      <span class="close" onclick="action('_close', event)">✕</span>
+    </div>
+    <div class="title">{{TITLE}}</div>
+    <div class="body">{{BODY}}</div>
+    <div class="actions">{{ACTIONS}}</div>
+  </div>
+  <script>
+    let dismissed = false;
+    function action(id, e) {
+      if (e) { e.stopPropagation(); }
+      if (dismissed) return;
+      dismissed = true;
+      // Slide-out animation, then post message after it finishes.
+      const el = document.getElementById('popup');
+      el.style.animation = 'slideIn 0.18s cubic-bezier(0.55,0,1,0.45) reverse forwards';
+      setTimeout(() => {
+        try { window.ipc.postMessage(id); } catch (_) {}
+      }, 180);
+    }
+    function bodyClick(e) {
+      // Buttons stop propagation, so we get here only on the body.
+      action('{{BODY_ACTION}}', e);
+    }
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); action('_close'); }
+    });
+  </script>
+</body>
+</html>

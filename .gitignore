@@ -1,6 +1,13 @@
 # Rust (ver1)
 ver1/target/
 ver1/test/
+ver1/Real Data/
+
+# Build artifacts / distribution packages
+ver2/
+
+# Local test scripts
+test-bugfixes.ps1
 
 # Python (ver0)
 ver0/__pycache__/

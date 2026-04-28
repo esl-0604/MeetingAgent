@@ -88,6 +88,9 @@ fn poll_loop(
     // before we spend the cost of re-discovery.
     const STALE_AFTER_EMPTY_SCANS: u32 = 10;
     let mut empty_scan_streak: u32 = 0;
+    // One-shot flag so we only fire the "captions detected" popup the first
+    // time we locate the container per session.
+    let mut announced_captions = false;
 
     loop {
         if tx.is_closed() {
@@ -111,6 +114,13 @@ fn poll_loop(
                     level: "info".into(),
                     msg: "caption container located".into(),
                 });
+                if !announced_captions {
+                    announced_captions = true;
+                    crate::gui::popup::show_event(
+                        "자막 감지됨",
+                        "Teams 라이브 캡션을 transcript.txt에 기록합니다.",
+                    );
+                }
                 backoff_misses = 0;
                 empty_scan_streak = 0;
             } else {
